@@ -1,0 +1,21 @@
+{
+  "name": "alterisk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "module": "src/create_integration.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "start": "es-dev-server --app-index . --node-resolve --watch --open"
+  },
+  "author": "Michael Klein",
+  "license": "ISC",
+  "dependencies": {
+    "htm": "^3.0.4"
+  },
+  "devDependencies": {
+    "es-dev-server": "^1.46.5"
+  }
+}
