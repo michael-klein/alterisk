@@ -1,8 +1,9 @@
-import { html, render } from "../node_modules/htm/preact/standalone.module.js";
 import {
   createPreactComponent,
   layoutEffect,
-} from "../src/create_integration.js";
+  html,
+  render,
+} from "../src/preact_integration.js";
 
 const Test = createPreactComponent(async function* (state, next) {
   // fetch asap
