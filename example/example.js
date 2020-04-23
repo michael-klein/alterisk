@@ -5,8 +5,16 @@ import {
 } from "../node_modules/htm/preact/standalone.module.js";
 import { createPreactComponent } from "../src/create_integration.js";
 
-const Test = createPreactComponent(function* (state) {
+const Test = createPreactComponent(async function* (state, next) {
   state.inputValue = "";
+
+  setTimeout(() => {
+    next();
+  });
+
+  yield html`<div>loading...</div>`;
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
   while (true) {
     yield html`
       <div>
