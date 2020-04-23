@@ -1,26 +1,34 @@
+import { html, render } from "../node_modules/htm/preact/standalone.module.js";
 import {
-  html,
-  render,
-  useState,
-} from "../node_modules/htm/preact/standalone.module.js";
-import { createPreactComponent } from "../src/create_integration.js";
+  createPreactComponent,
+  layoutEffect,
+} from "../src/create_integration.js";
 
 const Test = createPreactComponent(async function* (state, next) {
-  state.inputValue = "";
+  // fetch asap
+  const initialValueResponse = new Promise((resolve) =>
+    setTimeout(() => resolve("hello world"), 2000)
+  );
 
-  setTimeout(() => {
-    next();
-  });
+  layoutEffect(
+    () => next(), // will trigger next render and thus the promise below
+    () => [] // only run after the first render
+  );
 
+  // we first show a loading spinner
   yield html`<div>loading...</div>`;
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  // wait for initialValue before we continue
+  const initialValue = await initialValueResponse;
 
   while (true) {
+    const inputValue = state.inputValue ?? initialValue;
     yield html`
       <div>
-        <div>count:${state.inputValue}</div>
+        <div>value:${inputValue}</div>
         <div>
           <input
+            value=${inputValue}
             onInput=${(e) => (state.inputValue = e.target.value)}
             type="text"
           />
