@@ -2,11 +2,8 @@
   "name": "alterisk",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "module": "src/create_integration.js",
-  "directories": {
-    "example": "example"
-  },
+  "main": "src/index.js",
+  "module": "dist/index.js",
   "scripts": {
     "prepublish": "npm run build",
     "build": "node build.js",
