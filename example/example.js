@@ -5,23 +5,42 @@ import {
   render,
 } from "../src/preact_integration.js";
 
-const Test = createPreactComponent(async function* (state, next) {
-  // fetch asap
-  const initialValueResponse = new Promise((resolve) =>
+function fakeApiCall() {
+  return new Promise((resolve) =>
     setTimeout(() => resolve("hello world"), 2000)
   );
+}
 
+// this is basically the new version of custom hooks
+function setDocumentTitleTo(getValue) {
+  // layoutEffect is similiar to useLayoutEffect in (p)react
+  // you can only declare effects during the "setup phase" of the generator component
+  // "setup phase" = the code before the first yield/await
   layoutEffect(
-    () => next(), // will trigger next render and thus the promise below
-    () => [] // only run after the first render
+    () => {
+      if (getValue()) {
+        document.title = getValue();
+      }
+    },
+    () => [getValue()]
   );
+}
+
+const Test = createPreactComponent(async function* (state) {
+  // let's set the title of the page to our input value using an effect
+  // just for fun!
+  setDocumentTitleTo(() => state.inputValue);
 
   // we first show a loading spinner
-  yield html`<div>loading...</div>`;
-
   // wait for initialValue before we continue
-  const initialValue = await initialValueResponse;
+  // the array allows us to return a view and a promise to wait for
+  // when the promise resolves,  it will trigger the next render
+  const initialValue = await (yield [
+    html`<div>loading...</div>`,
+    fakeApiCall(),
+  ]);
 
+  // here the component enters the normal loop afer fetching
   while (true) {
     const inputValue = state.inputValue ?? initialValue;
     yield html`

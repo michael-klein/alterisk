@@ -51,21 +51,31 @@ export function createIntegration(integrate) {
 
   return {
     createComponent: (generatorComponent) => {
-      function renderComponent(context) {
+      function handleNext(context, next) {
+        if (!next.done) {
+          if (next.value instanceof Array) {
+            context.currentView = next.value[0];
+            renderComponent(context, next.value[1]);
+          } else {
+            context.currentView = next.value;
+          }
+        }
+      }
+      function renderComponent(context, arg) {
         if (!context.renderPromise) {
-          const next = generators.get(context).next();
+          const next = generators.get(context).next(arg);
           if (next instanceof Promise) {
-            context.renderPromise = next.then((result) => {
+            context.renderPromise = next.then((next) => {
               context.renderPromise = null;
-              context.currentView = result.value;
+              handleNext(context, next);
               if (context.renderQeued) {
                 context.renderQeued = false;
                 context.stateChanged = true;
               }
-              context.reRender();
+              context.reRender(true);
             });
           } else {
-            context.currentView = next.value;
+            handleNext(context, next);
           }
         }
       }
@@ -91,8 +101,8 @@ export function createIntegration(integrate) {
             state: $state({
               props: initialProps,
             }),
-            reRender: () => {
-              if (!context.renderPromise) {
+            reRender: (force) => {
+              if (!context.renderPromise || force) {
                 reRender();
               } else {
                 context.renderQeued = true;
