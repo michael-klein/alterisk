@@ -1,6 +1,6 @@
 {
   "name": "alterisk",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A generator driven component api for (p)react and more!",
   "main": "src/index.js",
   "module": "dist/index.js",
@@ -17,5 +17,9 @@
   "devDependencies": {
     "es-dev-server": "^1.46.5",
     "terser": "^4.6.11"
-  }
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
 }
