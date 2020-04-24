@@ -1,7 +1,7 @@
 {
   "name": "alterisk",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.1",
+  "description": "A generator driven component api for (p)react and more!",
   "main": "src/index.js",
   "module": "dist/index.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "start": "es-dev-server --app-index . --node-resolve --watch --open"
   },
   "author": "Michael Klein",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "htm": "^3.0.4"
   },
