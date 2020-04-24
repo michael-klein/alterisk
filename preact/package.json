@@ -1,0 +1,9 @@
+{
+  "name": "alterisk_preact",
+  "module": "index.js",
+  "main": "index.js",
+  "unpkg": "index.js",
+  "scripts": {
+    "build": "node build.js"
+  }
+}

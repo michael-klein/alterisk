@@ -1,6 +1,6 @@
 {
   "name": "alterisk",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A generator driven component api for (p)react and more!",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -8,7 +8,7 @@
   "source": "src/index.js",
   "scripts": {
     "prepublish": "npm run build",
-    "build": "node build.js",
+    "build": "node build.js && cd ./preact && node build.js",
     "start": "es-dev-server --app-index . --node-resolve --watch --open"
   },
   "author": "Michael Klein",
@@ -32,7 +32,7 @@
   "files": [
     "dist",
     "src",
-    "preact_integration.js",
+    "preact",
     "terserrc.json",
     "jsconfig.json",
     "build.js",
