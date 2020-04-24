@@ -16,10 +16,21 @@
   },
   "devDependencies": {
     "es-dev-server": "^1.46.5",
-    "terser": "^4.6.11"
+    "terser": "^4.6.11",
+    "snowpack": "^1.7.1"
   },
   "files": [
     "dist",
-    "src"
-  ]
+    "src",
+    "preact_integration.js",
+    "terserrc.json",
+    "jsconfig.json",
+    "build.js",
+    "web_modules"
+  ],
+  "snowpack": {
+    "webDependencies": [
+      "htm/preact/standalone.module.js"
+    ]
+  }
 }
