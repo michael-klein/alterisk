@@ -1,6 +1,6 @@
 {
   "name": "alterisk",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A generator driven component api for (p)react and more!",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -42,17 +42,5 @@
     "webDependencies": [
       "htm/preact/standalone.module.js"
     ]
-  },
-  "exports": {
-    ".": {
-      "browser": "./dist/index.js",
-      "require": "./dist/index.js",
-      "import": "./dist/index.js"
-    },
-    "./preact": {
-      "browser": "./dist/preact_integration.js",
-      "require": "./dist/preact_integration.js",
-      "import": "./dist/preact_integration.js"
-    }
   }
 }

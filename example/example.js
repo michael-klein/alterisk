@@ -3,7 +3,7 @@ import {
   layoutEffect,
   html,
   render,
-} from "../src/preact_integration.js";
+} from "../dist/preact_integration.js";
 
 function fakeApiCall() {
   return new Promise((resolve) =>
