@@ -1,15 +1,25 @@
 {
   "name": "alterisk",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "A generator driven component api for (p)react and more!",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "module": "dist/index.js",
+  "unpkg": "dist/index.js",
+  "source": "src/index.js",
   "scripts": {
     "prepublish": "npm run build",
     "build": "node build.js",
     "start": "es-dev-server --app-index . --node-resolve --watch --open"
   },
   "author": "Michael Klein",
+  "keywords": [
+    "generators",
+    "components",
+    "async",
+    "preact",
+    "react",
+    "ui"
+  ],
   "license": "MIT",
   "dependencies": {
     "htm": "^3.0.4"
@@ -32,5 +42,17 @@
     "webDependencies": [
       "htm/preact/standalone.module.js"
     ]
+  },
+  "exports": {
+    ".": {
+      "browser": "./dist/index.js",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    },
+    "./preact": {
+      "browser": "./dist/preact_integration.js",
+      "require": "./dist/preact_integration.js",
+      "import": "./dist/preact_integration.js"
+    }
   }
 }
