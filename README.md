@@ -28,14 +28,15 @@ import {
   render,
 } from "https://cdn.jsdelivr.net/npm/alterisk@0.0.10/preact/index.js";
 
+
 // our component is defined by a generator that yield views
 // state is a proxified object, any change to it's (deep) properties will trigger a re-render
 // state.props contains the current props
 const Test = createPreactComponent(async function*(state) { 
-  // here begins the "setup phase"
+  // At this point, the setup phase begins
   // "setup phase" = the code before the first yield/await
 
-  // In the setup phase, you should call alter*'s equivalent to custom hooks (implementation below):
+  // In the setup phase, you should call alter*'s equivalent to cutom hooks (implementation below):
   setDocumentTitleTo(() => state.inputValue);
 
   // we first show a loading spinner
@@ -49,7 +50,7 @@ const Test = createPreactComponent(async function*(state) {
     fakeApiCall()
   ]);
 
-  // here the component enters the normal loop afer fetching
+  // the component enters the normal execution loop afer fetching
   while (true) {
     const inputValue = state.inputValue !== undefined ? state.inputValue : initialValue;
     yield html`
