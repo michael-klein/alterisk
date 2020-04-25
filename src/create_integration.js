@@ -23,13 +23,13 @@ export function createIntegration(integrate) {
     });
   }
 
-  function runEffects(name, id) {
+  function runEffects(name, id, onlyCleanup = false) {
     const context = contextMap.get(id);
     if (context[name]) {
       context[name].forEach((effectData) => {
         const prevDeps = effectData.prevDeps;
         const deps = effectData.getDeps();
-        let shouldRun = prevDeps === INIT || !deps;
+        let shouldRun = prevDeps === INIT || !deps || onlyCleanup;
         if (!shouldRun && deps && deps.length > 0) {
           if (
             !deps ||
@@ -45,7 +45,7 @@ export function createIntegration(integrate) {
           if (effectData.cleanUp) {
             effectData.cleanUp();
           }
-          effectData.cleanUp = effectData.cb();
+          if (!onlyCleanup) effectData.cleanUp = effectData.cb();
         }
       });
     }
@@ -158,11 +158,15 @@ export function createIntegration(integrate) {
           }
           return context.currentView;
         },
-        sideEffect: async (id) => {
+        sideEffect: (id) => {
           runEffects("sideEffect", id);
         },
-        layoutEffect: async (id) => {
+        layoutEffect: (id) => {
           runEffects("layoutEffect", id);
+        },
+        unmount: (id) => {
+          runEffects("sideEffect", id, true);
+          runEffects("layoutEffect", id, true);
         },
       });
     },
