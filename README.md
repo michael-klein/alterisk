@@ -40,15 +40,14 @@ const Test = createPreactComponent(async function*(state) {
   setDocumentTitleTo(() => state.inputValue);
 
   // we first show a loading spinner
-  // wait for initialValue before we continue
-  // the array allows us to return a view and a promise to wait for
-  // when the promise resolves,  it will trigger the next render
-  const initialValue = await (yield [
-    html`
-      <div>loading...</div>
-    `,
-    fakeApiCall()
-  ]);
+  // then wait for initialValue before we continue
+  // withPromise enables us to yield a view to render immediatly
+  // and a promise. alter* will await the promise and re-render on resolve
+  // yield returns the promise so we can await the result
+  const initialValue = await (yield withPromise(
+    html`<div>loading...</div>`,
+    fakeApiCall(),
+  ));
 
   // the component enters the normal execution loop afer fetching
   while (true) {
@@ -97,7 +96,38 @@ function fakeApiCall() {
 }
 ```
 
-## Create integrations
+Here is another example with a simple non-async counter:
+
+[run on stackblitz](https://stackblitz.com/edit/js-9goh9e)
+```
+// $counter is a "custom hook" that creates a counter state and increments it every second
+function $counter() {
+  const counter = $state({ count: 0 });
+  layoutEffect(
+    () => {
+      // set up the interval
+      const id = setInterval(() => counter.count++, 1000);
+      // clean it up on unmount
+      return () => clearInterval(id);
+    },
+    () => [] //run only once
+  );
+  return counter;
+}
+
+export const Counter = createPreactComponent(function* (state) {
+  // we initialize a counter and merge the counter state into state
+  // now, every time the interval ticks, it will trigger a re-render
+  state.merge($counter());
+
+  while (true) {
+    const { count } = state;
+    yield html` <div>current count: ${count}</div> `;
+  }
+});
+```
+
+## Creating integrations
 
 alterisk can integrate with any framework (potentially). From the above example, [createPreactComponent] was created with the createPReactIntegration factory function which in turn is a thin wrapper around [createIntegration].
 
@@ -149,3 +179,11 @@ export const {
   };
 });
 ```
+
+## What's next?
+
+Neither the current implementation nor the API are stable so I'd like some feedback via github issues :)
+Some things that are planned: 
+- Typescript types (the library itself is written as es6 modules but I will provide a .d.ts file eventually)
+- A ready-to-use web component integration
+- Tests!
