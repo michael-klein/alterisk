@@ -4,7 +4,7 @@ export const createPReactIntegration = (framework) =>
   createIntegration((api) => {
     return (props) => {
       const reRender = framework.useState(0)[1];
-      const context = framework.useState(
+      const id = framework.useState(
         api.init(
           {
             reRender: () => reRender((i) => i + 1),
@@ -13,11 +13,11 @@ export const createPReactIntegration = (framework) =>
         )
       )[0];
       framework.useEffect(() => {
-        api.sideEffect(context);
+        api.sideEffect(id);
       });
       framework.useLayoutEffect(() => {
-        api.layoutEffect(context);
+        api.layoutEffect(id);
       });
-      return api.render(context, props);
+      return api.render(id, props);
     };
   });

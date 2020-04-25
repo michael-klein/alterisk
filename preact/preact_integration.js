@@ -6,4 +6,20 @@ export const {
   sideEffect,
 } = createPReactIntegration(Preact);
 
-export * from "../web_modules/htm/preact/standalone.module.js";
+export {
+  html,
+  render,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  Component,
+  createContext,
+  h,
+  useCallback,
+  useContext,
+  useDebugValue,
+  useImperativeHandle,
+  useMemo,
+  useReducer,
+  useRef,
+} from "../web_modules/htm/preact/standalone.module.js";

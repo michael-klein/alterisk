@@ -3,6 +3,7 @@ import { $state } from "./reactivity.js";
 const generators = new WeakMap();
 
 export function createIntegration(integrate) {
+  const contextMap = new Map();
   let setupContext;
   function checkContext(name) {
     if (!setupContext) {
@@ -22,7 +23,8 @@ export function createIntegration(integrate) {
     });
   }
 
-  function runEffects(name, context) {
+  function runEffects(name, id) {
+    const context = contextMap.get(id);
     if (context[name]) {
       context[name].forEach((effectData) => {
         const prevDeps = effectData.prevDeps;
@@ -61,7 +63,7 @@ export function createIntegration(integrate) {
           }
         }
       }
-      function renderComponent(context, arg) {
+      function renderComponent(context, arg = void 0) {
         if (!context.renderPromise) {
           const next = generators.get(context).next(arg);
           if (next instanceof Promise) {
@@ -101,7 +103,7 @@ export function createIntegration(integrate) {
             state: $state({
               props: initialProps,
             }),
-            reRender: (force) => {
+            reRender: (force = false) => {
               if (!context.renderPromise || force) {
                 reRender();
               } else {
@@ -115,6 +117,8 @@ export function createIntegration(integrate) {
             renderPromise: null,
             renderQeued: false,
           };
+          const id = Symbol("id");
+          contextMap.set(id, context);
           setupContext = context;
           generators.set(
             context,
@@ -130,9 +134,10 @@ export function createIntegration(integrate) {
               context.reRender();
             }
           });
-          return context;
+          return id;
         },
-        render: (context, props) => {
+        render: (id, props) => {
+          const context = contextMap.get(id);
           let propsChanged = false;
           if (props) {
             propsChanged = arePropsDifferent(props, context.state.props);
@@ -153,11 +158,11 @@ export function createIntegration(integrate) {
           }
           return context.currentView;
         },
-        sideEffect: async (context) => {
-          runEffects("sideEffect", context);
+        sideEffect: async (id) => {
+          runEffects("sideEffect", id);
         },
-        layoutEffect: async (context) => {
-          runEffects("layoutEffect", context);
+        layoutEffect: async (id) => {
+          runEffects("layoutEffect", id);
         },
       });
     },
