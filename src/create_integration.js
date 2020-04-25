@@ -2,6 +2,11 @@ import { $state } from "./reactivity.js";
 
 const generators = new WeakMap();
 
+const WITH_PROMISE = Symbol("promise");
+export function withPromise(view, promise) {
+  return [WITH_PROMISE, view, promise];
+}
+
 export function createIntegration(integrate) {
   const contextMap = new Map();
   let setupContext;
@@ -55,9 +60,9 @@ export function createIntegration(integrate) {
     createComponent: (generatorComponent) => {
       function handleNext(context, next) {
         if (!next.done) {
-          if (next.value instanceof Array) {
-            context.currentView = next.value[0];
-            renderComponent(context, next.value[1]);
+          if (next.value instanceof Array && next.value[0] === WITH_PROMISE) {
+            context.currentView = next.value[1];
+            renderComponent(context, next.value[2]);
           } else {
             context.currentView = next.value;
           }

@@ -3,7 +3,10 @@ import {
   layoutEffect,
   html,
   render,
+  withPromise,
 } from "../preact/preact_integration.js";
+
+import { Counter } from "./counter.js";
 
 function fakeApiCall() {
   return new Promise((resolve) =>
@@ -32,13 +35,14 @@ const Test = createPreactComponent(async function* (state) {
   setDocumentTitleTo(() => state.inputValue);
 
   // we first show a loading spinner
-  // wait for initialValue before we continue
-  // the array allows us to return a view and a promise to wait for
-  // when the promise resolves,  it will trigger the next render
-  const initialValue = await (yield [
+  // then wait for initialValue before we continue
+  // withPromise enables us to yield a view to render immediatly
+  // and a promise. alter* will await the promise and re-render on resolve
+  // yield returns the promise so we can await the result
+  const initialValue = await (yield withPromise([
     html`<div>loading...</div>`,
     fakeApiCall(),
-  ]);
+  ]));
 
   // here the component enters the normal loop afer fetching
   while (true) {
@@ -46,6 +50,7 @@ const Test = createPreactComponent(async function* (state) {
     yield html`
       <div>
         <div>value:${inputValue}</div>
+        <${Counter} />
         <div>
           <input
             value=${inputValue}

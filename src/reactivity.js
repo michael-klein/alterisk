@@ -55,8 +55,8 @@ export const $state = (initialState) => {
             }
           });
         };
-        otherState.on((value) => {
-          performMerge(value);
+        otherState.on(() => {
+          performMerge(otherState);
         });
         canEmit = false;
         performMerge(otherState);
