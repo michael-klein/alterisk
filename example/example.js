@@ -39,10 +39,10 @@ const Test = createPreactComponent(async function* (state) {
   // withPromise enables us to yield a view to render immediatly
   // and a promise. alter* will await the promise and re-render on resolve
   // yield returns the promise so we can await the result
-  const initialValue = await (yield withPromise([
+  const initialValue = await (yield withPromise(
     html`<div>loading...</div>`,
-    fakeApiCall(),
-  ]));
+    fakeApiCall()
+  ));
 
   // here the component enters the normal loop afer fetching
   while (true) {

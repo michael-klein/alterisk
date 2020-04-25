@@ -28,6 +28,6 @@ export const Counter = createPreactComponent(function* (state) {
 
   while (true) {
     const { count } = state;
-    yield html` <div>current counter:${count}</div> `;
+    yield html` <div>current count: ${count}</div> `;
   }
 });
