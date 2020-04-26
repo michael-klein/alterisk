@@ -33,6 +33,7 @@ const Test = createPreactComponent(async function* (state) {
   // let's set the title of the page to our input value using an effect
   // just for fun!
   setDocumentTitleTo(() => state.inputValue);
+  state.initialCount = 0;
 
   // we first show a loading spinner
   // then wait for initialValue before we continue
@@ -50,12 +51,22 @@ const Test = createPreactComponent(async function* (state) {
     yield html`
       <div>
         <div>value:${inputValue}</div>
-        <${Counter} />
         <div>
           <input
             value=${inputValue}
             onInput=${(e) => (state.inputValue = e.target.value)}
             type="text"
+          />
+        </div>
+        <br />
+        <br />
+        <${Counter} initialCount=${state.initialCount} />
+        <div>
+          <span>reset count to: </span>
+          <input
+            type="number"
+            value=${state.initialCount}
+            onInput=${(e) => (state.initialCount = parseInt(e.target.value))}
           />
         </div>
       </div>

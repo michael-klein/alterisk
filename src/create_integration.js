@@ -103,11 +103,9 @@ export function createIntegration(integrate) {
         return false;
       }
       return integrate({
-        init: ({ reRender }, initialProps) => {
+        init: ({ reRender }, initialProps = {}, args = {}) => {
           const context = {
-            state: $state({
-              props: initialProps,
-            }),
+            state: $state({}),
             reRender: (force = false) => {
               if (!context.renderPromise || force) {
                 reRender();
@@ -121,16 +119,17 @@ export function createIntegration(integrate) {
             init: true,
             renderPromise: null,
             renderQeued: false,
+            params: {
+              props: initialProps,
+              ...args,
+            },
           };
           const id = Symbol("id");
           contextMap.set(id, context);
           setupContext = context;
           generators.set(
             context,
-            generatorComponent(context.state, () => {
-              context.stateChanged = true;
-              context.reRender();
-            })
+            generatorComponent(context.state, () => context.params)
           );
           setupContext = undefined;
           context.state.on(() => {
@@ -141,14 +140,17 @@ export function createIntegration(integrate) {
           });
           return id;
         },
-        render: (id, props) => {
+        render: (id, props = {}, params = {}) => {
           const context = contextMap.get(id);
           let propsChanged = false;
           if (props) {
-            propsChanged = arePropsDifferent(props, context.state.props);
+            propsChanged = arePropsDifferent(props, context.params.props);
             context.allowStateReRender = false;
-            context.state.props = props;
+            context.params = { ...params };
+            context.params.props = props;
             context.allowStateReRender = true;
+          } else {
+            context.params = { ...params };
           }
           if (context.init) {
             setupContext = context;
