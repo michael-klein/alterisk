@@ -28,6 +28,10 @@ export function createIntegration(integrate) {
     });
   }
 
+  const RENDER_EFFECT = "r";
+  const SIDE_EFFECT = "s";
+  const LAYOUT_EFFECT = "l";
+
   function runEffects(name, id, onlyCleanup = false) {
     const context = contextMap.get(id);
     if (context[name]) {
@@ -163,21 +167,26 @@ export function createIntegration(integrate) {
             context.init = false;
             setupContext = undefined;
           }
+          runEffects(RENDER_EFFECT, id);
           return context.currentView;
         },
         sideEffect: (id) => {
-          runEffects("sideEffect", id);
+          runEffects(SIDE_EFFECT, id);
         },
         layoutEffect: (id) => {
-          runEffects("layoutEffect", id);
+          runEffects(LAYOUT_EFFECT, id);
         },
         unmount: (id) => {
-          runEffects("sideEffect", id, true);
-          runEffects("layoutEffect", id, true);
+          runEffects(SIDE_EFFECT, id, true);
+          runEffects(LAYOUT_EFFECT, id, true);
         },
       });
     },
-    sideEffect: (cb, getDeps) => effect("sideEffect", cb, getDeps),
-    layoutEffect: (cb, getDeps) => effect("layoutEffect", cb, getDeps),
+    sideEffect: (cb, getDeps) => effect(SIDE_EFFECT, cb, getDeps),
+    layoutEffect: (cb, getDeps) => effect(LAYOUT_EFFECT, cb, getDeps),
+    onRender: (cb) =>
+      effect(RENDER_EFFECT, () => {
+        cb();
+      }),
   };
 }

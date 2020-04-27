@@ -6,6 +6,7 @@ export const {
   createComponent: createPreactComponent,
   layoutEffect,
   sideEffect,
+  onRender,
 } = createPReactIntegration(Preact);
 
 export {
