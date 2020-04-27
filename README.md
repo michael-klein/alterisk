@@ -99,7 +99,7 @@ function fakeApiCall() {
 Here is another example with a simple non-async counter:
 
 [run on stackblitz](https://stackblitz.com/edit/js-9goh9e)
-```
+```javascript
 // $counter is a "custom hook" that creates a counter state and increments it every second
 function $counter() {
   const counter = $state({ count: 0 });
@@ -133,7 +133,7 @@ alterisk can integrate with any framework (potentially). From the above example,
 
 [createIntegration] is the main API method for adding generator based component factories on top of a given framework. Here's how you would arrive at [createPreactComponent] using it:
 
-```
+```javascript
 import { createIntegration } from "alterisk";
 import { useState, useEffect, useLayoutEffect } from "htm/preact";
 
