@@ -9,7 +9,7 @@ A generator driven component api for (p)react and more!
 
 ## What is this about?
 
-alter* is an attempt to provide an (async) generator driven alternative component model for preact, react and more (you can create your own integration).
+alter\* is an attempt to provide an (async) generator driven alternative component model for preact, react and more (you can create your own integration).
 
 The idea to add this on top of existing ui frameworks was on the back of my mind for a while (ever since I started working on my own generator driven framework [enth.js](https://github.com/michael-klein)) and the general interest of the community in [Crank.js](https://crank.js.org/) finally made me give it a try.
 
@@ -20,6 +20,7 @@ This project is mostly experimental at this stage and I'm publishing it early to
 Here's a simple, contrived example of an async generator component on top of preact+htm:
 
 [run on stackblitz](https://stackblitz.com/edit/js-8bjsqm)
+
 ```javascript
 import {
   createPreactComponent,
@@ -28,11 +29,10 @@ import {
   render,
 } from "https://cdn.jsdelivr.net/npm/alterisk@0.0.10/preact/index.js";
 
-
 // our component is defined by a generator that yield views
 // state is a proxified object, any change to it's (deep) properties will trigger a re-render
 // state.props contains the current props
-const Test = createPreactComponent(async function*(state) { 
+const Test = createPreactComponent(async function* (state) {
   // At this point, the setup phase begins
   // "setup phase" = the code before the first yield/await
 
@@ -46,19 +46,20 @@ const Test = createPreactComponent(async function*(state) {
   // yield returns the promise so we can await the result
   const initialValue = await (yield withPromise(
     html`<div>loading...</div>`,
-    fakeApiCall(),
+    fakeApiCall()
   ));
 
   // the component enters the normal execution loop afer fetching
   while (true) {
-    const inputValue = state.inputValue !== undefined ? state.inputValue : initialValue;
+    const inputValue =
+      state.inputValue !== undefined ? state.inputValue : initialValue;
     yield html`
       <div>
         <div>value:${inputValue}</div>
         <div>
           <input
             value=${inputValue}
-            onInput=${e => (state.inputValue = e.target.value)}
+            onInput=${(e) => (state.inputValue = e.target.value)}
             type="text"
           />
         </div>
@@ -84,25 +85,23 @@ function setDocumentTitleTo(getValue) {
   );
 }
 
-render(
-  html`
-    <${Test} />
-  `,
-  document.body
-);
+render(html` <${Test} /> `, document.body);
 
 function fakeApiCall() {
-  return new Promise(resolve => setTimeout(() => resolve("hello world"), 2000));
+  return new Promise((resolve) =>
+    setTimeout(() => resolve("hello world"), 2000)
+  );
 }
 ```
 
 Here is another example with a simple non-async counter:
 
 [run on stackblitz](https://stackblitz.com/edit/js-9goh9e)
+
 ```javascript
 // $counter is a "custom hook" that creates a counter state and increments it every second
 function $counter() {
-  const counter = $state({ count: 0 });
+  const counter = $observable({ count: 0 });
   layoutEffect(
     () => {
       // set up the interval
@@ -183,7 +182,8 @@ export const {
 ## What's next?
 
 Neither the current implementation nor the API are stable so I'd like some feedback via github issues :)
-Some things that are planned: 
+Some things that are planned:
+
 - Typescript types (the library itself is written as es6 modules but I will provide a .d.ts file eventually)
 - A ready-to-use web component integration
 - Tests!

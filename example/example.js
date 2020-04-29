@@ -4,6 +4,8 @@ import {
   html,
   render,
   withPromise,
+  $observable,
+  withObservable,
 } from "../preact/preact_integration.js";
 
 import { Counter } from "./counter.js";
@@ -29,48 +31,51 @@ function setDocumentTitleTo(getValue) {
   );
 }
 
-const Test = createPreactComponent(async function* (state) {
+const Test = createPreactComponent(async function* () {
   // let's set the title of the page to our input value using an effect
   // just for fun!
+  const state = $observable({ inputValue: undefined, initialCount: 0 });
   setDocumentTitleTo(() => state.inputValue);
-  state.initialCount = 0;
 
   // we first show a loading spinner
   // then wait for initialValue before we continue
   // withPromise enables us to yield a view to render immediatly
   // and a promise. alter* will await the promise and re-render on resolve
   // yield returns the promise so we can await the result
-  const initialValue = await (yield withPromise(
+  state.inputValue = await (yield withPromise(
     html`<div>loading...</div>`,
     fakeApiCall()
   ));
-
+  let i = 0;
   // here the component enters the normal loop afer fetching
   while (true) {
-    const inputValue = state.inputValue ?? initialValue;
-    yield html`
-      <div>
-        <div>value:${inputValue}</div>
+    const { inputValue, initialCount } = state;
+    yield withObservable(
+      html`
         <div>
-          <input
-            value=${inputValue}
-            onInput=${(e) => (state.inputValue = e.target.value)}
-            type="text"
-          />
+          <div>value:${inputValue}</div>
+          <div>
+            <input
+              value=${inputValue}
+              onInput=${(e) => (state.inputValue = e.target.value)}
+              type="text"
+            />
+          </div>
+          <br />
+          <br />
+          <${Counter} initialCount=${initialCount} />
+          <div>
+            <span>reset count to: </span>
+            <input
+              type="number"
+              value=${initialCount}
+              onInput=${(e) => (state.initialCount = parseInt(e.target.value))}
+            />
+          </div>
         </div>
-        <br />
-        <br />
-        <${Counter} initialCount=${state.initialCount} />
-        <div>
-          <span>reset count to: </span>
-          <input
-            type="number"
-            value=${state.initialCount}
-            onInput=${(e) => (state.initialCount = parseInt(e.target.value))}
-          />
-        </div>
-      </div>
-    `;
+      `,
+      state
+    );
   }
 });
 

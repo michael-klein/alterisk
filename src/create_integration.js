@@ -1,11 +1,25 @@
-import { $state } from "./reactivity.js";
+import { $observable } from "./reactivity.js";
 
 const generators = new WeakMap();
 
-const WITH_PROMISE = Symbol("promise");
-export function withPromise(view, promise) {
-  return [WITH_PROMISE, view, promise];
+const WITH_MORE = Symbol("m");
+
+export function createYieldable(cb) {
+  return (view, arg) => {
+    return [WITH_MORE, view, arg, cb];
+  };
 }
+
+export const withPromise = createYieldable((_, render) => {
+  render();
+});
+
+export const withObservable = createYieldable((observable, render) => {
+  const off = observable.on(() => {
+    off();
+    render();
+  });
+});
 
 export function createIntegration(integrate) {
   const contextMap = new Map();
@@ -64,16 +78,27 @@ export function createIntegration(integrate) {
     createComponent: (generatorComponent) => {
       function handleNext(context, next) {
         if (!next.done) {
-          if (next.value instanceof Array && next.value[0] === WITH_PROMISE) {
-            context.currentView = next.value[1];
-            renderComponent(context, next.value[2]);
+          if (next.value instanceof Array && next.value[0] === WITH_MORE) {
+            const [, view, arg, cb] = next.value;
+            context.currentArg = arg;
+            cb(arg, () => {
+              if (context.currentArg instanceof Promise) {
+                renderComponent(context);
+              } else {
+                context.stateChanged = true;
+                context.reRender();
+              }
+            });
+            context.currentView = view;
           } else {
             context.currentView = next.value;
           }
         }
       }
-      function renderComponent(context, arg = void 0) {
+      function renderComponent(context) {
         if (!context.renderPromise) {
+          const arg = context.currentArg;
+          context.currentArg = undefined;
           const next = generators.get(context).next(arg);
           if (next instanceof Promise) {
             context.renderPromise = next.then((next) => {
@@ -109,7 +134,6 @@ export function createIntegration(integrate) {
       return integrate({
         init: ({ reRender }, initialProps = {}, args = {}) => {
           const context = {
-            state: $state({}),
             reRender: (force = false) => {
               if (!context.renderPromise || force) {
                 reRender();
@@ -118,7 +142,6 @@ export function createIntegration(integrate) {
               }
             },
             currentView: null,
-            allowStateReRender: true,
             stateChanged: true,
             init: true,
             renderPromise: null,
@@ -133,15 +156,9 @@ export function createIntegration(integrate) {
           setupContext = context;
           generators.set(
             context,
-            generatorComponent(context.state, () => context.params)
+            generatorComponent(() => context.params)
           );
           setupContext = undefined;
-          context.state.on(() => {
-            if (context.allowStateReRender) {
-              context.stateChanged = true;
-              context.reRender();
-            }
-          });
           return id;
         },
         render: (id, props = {}, params = {}) => {
@@ -149,10 +166,8 @@ export function createIntegration(integrate) {
           let propsChanged = false;
           if (props) {
             propsChanged = arePropsDifferent(props, context.params.props);
-            context.allowStateReRender = false;
             context.params = { ...params };
             context.params.props = props;
-            context.allowStateReRender = true;
           } else {
             context.params = { ...params };
           }

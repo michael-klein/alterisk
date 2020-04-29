@@ -2,8 +2,8 @@ import {
   createPreactComponent,
   layoutEffect,
   html,
-  render,
-  $state,
+  withObservable,
+  $observable,
 } from "../preact/preact_integration.js";
 
 // $counter is a "custom hook" that creates a counter state and increments it every second
@@ -14,7 +14,7 @@ function $counter(params) {
     return props.initialCount ? props.initialCount : 0;
   };
 
-  const counter = $state({ count: getInitialCount() });
+  const counter = $observable({ count: getInitialCount() });
 
   let id;
   layoutEffect(
@@ -30,14 +30,14 @@ function $counter(params) {
   return counter;
 }
 
-export const Counter = createPreactComponent(function* (state, params) {
+export const Counter = createPreactComponent(function* (params) {
   // we initialize a counter and merge the counter state into state
   // now, every time the interval ticks, it will trigger a re-render
   // the params functions contains an object with the current props (and potentially more)
-  state.merge($counter(params));
+  const counter = $counter(params);
 
   while (true) {
-    const { count } = state;
-    yield html` <div>current count: ${count}</div> `;
+    const { count } = counter;
+    yield withObservable(html`<div>current count: ${count}</div>`, counter);
   }
 });
