@@ -1,4 +1,4 @@
-import { $state } from "./reactivity.js";
+import { $observable } from "./reactivity.js";
 
 const generators = new WeakMap();
 
@@ -60,7 +60,7 @@ export function createIntegration(integrate) {
     }
   }
 
-  return {
+  const api = {
     createComponent: (generatorComponent) => {
       function handleNext(context, next) {
         if (!next.done) {
@@ -81,7 +81,7 @@ export function createIntegration(integrate) {
               handleNext(context, next);
               if (context.renderQeued) {
                 context.renderQeued = false;
-                context.stateChanged = true;
+                context.observableChanged = true;
               }
               context.reRender(true);
             });
@@ -109,7 +109,6 @@ export function createIntegration(integrate) {
       return integrate({
         init: ({ reRender }, initialProps = {}, args = {}) => {
           const context = {
-            state: $state({}),
             reRender: (force = false) => {
               if (!context.renderPromise || force) {
                 reRender();
@@ -118,8 +117,8 @@ export function createIntegration(integrate) {
               }
             },
             currentView: null,
-            allowStateReRender: true,
-            stateChanged: true,
+            allowObservableReRender: true,
+            observableChanged: true,
             init: true,
             renderPromise: null,
             renderQeued: false,
@@ -133,15 +132,9 @@ export function createIntegration(integrate) {
           setupContext = context;
           generators.set(
             context,
-            generatorComponent(context.state, () => context.params)
+            generatorComponent(() => context.params)
           );
           setupContext = undefined;
-          context.state.on(() => {
-            if (context.allowStateReRender) {
-              context.stateChanged = true;
-              context.reRender();
-            }
-          });
           return id;
         },
         render: (id, props = {}, params = {}) => {
@@ -149,18 +142,18 @@ export function createIntegration(integrate) {
           let propsChanged = false;
           if (props) {
             propsChanged = arePropsDifferent(props, context.params.props);
-            context.allowStateReRender = false;
+            context.allowObservableReRender = false;
             context.params = { ...params };
             context.params.props = props;
-            context.allowStateReRender = true;
+            context.allowObservableReRender = true;
           } else {
             context.params = { ...params };
           }
           if (context.init) {
             setupContext = context;
           }
-          if (context.stateChanged || propsChanged) {
-            context.stateChanged = false;
+          if (context.observableChanged || propsChanged) {
+            context.observableChanged = false;
             renderComponent(context);
           }
           if (context.init) {
@@ -182,11 +175,37 @@ export function createIntegration(integrate) {
         },
       });
     },
-    sideEffect: (cb, getDeps) => effect(SIDE_EFFECT, cb, getDeps),
-    layoutEffect: (cb, getDeps) => effect(LAYOUT_EFFECT, cb, getDeps),
-    onRender: (cb) =>
+    $sideEffect: (cb, getDeps) => effect(SIDE_EFFECT, cb, getDeps),
+    $layoutEffect: (cb, getDeps) => effect(LAYOUT_EFFECT, cb, getDeps),
+    $onRender: (cb) =>
       effect(RENDER_EFFECT, () => {
         cb();
       }),
+    $reRender: () => {
+      checkContext("$reRender");
+      const offs = [];
+      api.$layoutEffect(
+        () => () => {
+          offs.forEach((off) => off());
+        },
+        () => []
+      );
+      const context = setupContext;
+      const renderNow = () => {
+        if (context.allowObservableReRender) {
+          context.observableChanged = true;
+          context.reRender();
+        }
+      };
+      return {
+        renderOn: (observable) => {
+          const off = observable.on(renderNow);
+          offs.push(off);
+          return off;
+        },
+        renderNow,
+      };
+    },
   };
+  return api;
 }

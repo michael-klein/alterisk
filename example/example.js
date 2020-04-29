@@ -1,9 +1,11 @@
 import {
   createPreactComponent,
-  layoutEffect,
+  $layoutEffect,
   html,
   render,
   withPromise,
+  $observable,
+  $reRender,
 } from "../preact/preact_integration.js";
 
 import { Counter } from "./counter.js";
@@ -19,7 +21,7 @@ function setDocumentTitleTo(getValue) {
   // layoutEffect is similiar to useLayoutEffect in (p)react
   // you can only declare effects during the "setup phase" of the generator component
   // "setup phase" = the code before the first yield/await
-  layoutEffect(
+  $layoutEffect(
     () => {
       if (getValue()) {
         document.title = getValue();
@@ -29,25 +31,28 @@ function setDocumentTitleTo(getValue) {
   );
 }
 
-const Test = createPreactComponent(async function* (state) {
+const Test = createPreactComponent(async function* () {
+  const { renderOn } = $reRender();
+
   // let's set the title of the page to our input value using an effect
   // just for fun!
+  const state = $observable({ initialCount: 0, inputValue: "" });
   setDocumentTitleTo(() => state.inputValue);
-  state.initialCount = 0;
-
   // we first show a loading spinner
   // then wait for initialValue before we continue
   // withPromise enables us to yield a view to render immediatly
   // and a promise. alter* will await the promise and re-render on resolve
   // yield returns the promise so we can await the result
-  const initialValue = await (yield withPromise(
+  state.inputValue = await (yield withPromise(
     html`<div>loading...</div>`,
     fakeApiCall()
   ));
 
+  renderOn(state);
+
   // here the component enters the normal loop afer fetching
   while (true) {
-    const inputValue = state.inputValue ?? initialValue;
+    const { inputValue } = state;
     yield html`
       <div>
         <div>value:${inputValue}</div>

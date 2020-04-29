@@ -4,9 +4,10 @@ export * from "../src/index.js";
 
 export const {
   createComponent: createPreactComponent,
-  layoutEffect,
-  sideEffect,
-  onRender,
+  $layoutEffect,
+  $sideEffect,
+  $onRender,
+  $reRender,
 } = createPReactIntegration(Preact);
 
 export {
