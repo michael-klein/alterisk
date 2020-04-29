@@ -32,7 +32,7 @@ export function proxify(obj, onChange) {
   return proxy;
 }
 
-export const $observable = (initialState) => {
+export const createObservable = (initialState) => {
   let listeners = [];
   let canEmit = true;
   const proxy = proxify(

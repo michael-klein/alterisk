@@ -1,5 +1,3 @@
-import { $observable } from "./reactivity.js";
-
 const generators = new WeakMap();
 
 const WITH_MORE = Symbol("m");
@@ -26,7 +24,7 @@ export function createIntegration(integrate) {
   let setupContext;
   function checkContext(name) {
     if (!setupContext) {
-      throw new Error(`You can only call ${name} during setup!`);
+      throw new Error(`You can only call ${name} during render!`);
     }
   }
   const INIT = Symbol("init");
@@ -79,7 +77,13 @@ export function createIntegration(integrate) {
       function handleNext(context, next) {
         if (!next.done) {
           if (next.value instanceof Array && next.value[0] === WITH_MORE) {
-            const [, view, arg, cb] = next.value;
+            let [, view, arg, cb] = next.value;
+            if (arg instanceof Promise) {
+              arg = arg.then((value) => {
+                setupContext = context;
+                return value;
+              });
+            }
             context.currentArg = arg;
             cb(arg, () => {
               if (context.currentArg instanceof Promise) {
@@ -99,9 +103,12 @@ export function createIntegration(integrate) {
         if (!context.renderPromise) {
           const arg = context.currentArg;
           context.currentArg = undefined;
+          setupContext = context;
           const next = generators.get(context).next(arg);
+          setupContext = undefined;
           if (next instanceof Promise) {
             context.renderPromise = next.then((next) => {
+              setupContext = undefined;
               context.renderPromise = null;
               handleNext(context, next);
               if (context.renderQeued) {
@@ -112,6 +119,7 @@ export function createIntegration(integrate) {
             });
           } else {
             handleNext(context, next);
+            setupContext = undefined;
           }
         }
       }
@@ -143,7 +151,6 @@ export function createIntegration(integrate) {
             },
             currentView: null,
             stateChanged: true,
-            init: true,
             renderPromise: null,
             renderQeued: false,
             params: {
@@ -171,16 +178,9 @@ export function createIntegration(integrate) {
           } else {
             context.params = { ...params };
           }
-          if (context.init) {
-            setupContext = context;
-          }
           if (context.stateChanged || propsChanged) {
             context.stateChanged = false;
             renderComponent(context);
-          }
-          if (context.init) {
-            context.init = false;
-            setupContext = undefined;
           }
           runEffects(RENDER_EFFECT, id);
           return context.currentView;
@@ -197,9 +197,9 @@ export function createIntegration(integrate) {
         },
       });
     },
-    sideEffect: (cb, getDeps) => effect(SIDE_EFFECT, cb, getDeps),
-    layoutEffect: (cb, getDeps) => effect(LAYOUT_EFFECT, cb, getDeps),
-    onRender: (cb) =>
+    $sideEffect: (cb, getDeps) => effect(SIDE_EFFECT, cb, getDeps),
+    $layoutEffect: (cb, getDeps) => effect(LAYOUT_EFFECT, cb, getDeps),
+    $onRender: (cb) =>
       effect(RENDER_EFFECT, () => {
         cb();
       }),

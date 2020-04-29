@@ -6,7 +6,6 @@ const path = require("path");
 
 const files = globSync(`${"./src"}/*.js`);
 files.map((file) => {
-  const fileName = path.basename(file, path.extname(file));
   const terserResult = Terser.minify(fs.readFileSync(file, "utf8"), {
     ...options,
   });

@@ -26,8 +26,8 @@
   },
   "devDependencies": {
     "es-dev-server": "^1.46.5",
-    "terser": "^4.6.11",
-    "snowpack": "^1.7.1"
+    "snowpack": "^1.7.1",
+    "terser": "^4.6.11"
   },
   "files": [
     "dist",

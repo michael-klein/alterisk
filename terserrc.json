@@ -29,9 +29,9 @@
     "dead_code": true,
     "evaluate": true
   },
-  "mangle": {
-    "safari10": true
-  },
+  "passes": 5,
+  "toplevel": true,
+  "mangle": true,
   "output": {
     "ecma": 8,
     "comments": false,

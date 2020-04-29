@@ -101,7 +101,7 @@ Here is another example with a simple non-async counter:
 ```javascript
 // $counter is a "custom hook" that creates a counter state and increments it every second
 function $counter() {
-  const counter = $observable({ count: 0 });
+  const counter = createObservable({ count: 0 });
   layoutEffect(
     () => {
       // set up the interval

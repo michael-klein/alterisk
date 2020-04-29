@@ -1,9 +1,9 @@
 import {
   createPreactComponent,
-  layoutEffect,
+  $layoutEffect,
   html,
   withObservable,
-  $observable,
+  createObservable,
 } from "../preact/preact_integration.js";
 
 // $counter is a "custom hook" that creates a counter state and increments it every second
@@ -14,10 +14,10 @@ function $counter(params) {
     return props.initialCount ? props.initialCount : 0;
   };
 
-  const counter = $observable({ count: getInitialCount() });
+  const counter = createObservable({ count: getInitialCount() });
 
   let id;
-  layoutEffect(
+  $layoutEffect(
     () => {
       counter.count = getInitialCount();
       // set up the interval
