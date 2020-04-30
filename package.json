@@ -1,6 +1,6 @@
 {
   "name": "alterisk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A generator driven component api for (p)react and more!",
   "main": "dist/index.js",
   "module": "dist/index.js",
