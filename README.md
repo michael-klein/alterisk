@@ -205,6 +205,42 @@ stop.addEventListener("click", () => {
 });
 ```
 
+### Rendering views and change detection
+
+alter* components are generator functions that yield views:
+
+```javascript
+function* HelloWorld() {
+  yield html`<div>hello world</div>`
+}
+```
+
+A component may yield different results:
+```javascript
+function* HelloWorld() {
+  yield html`<div>Hello world!</div>`
+  yield html`<div>How are you?</div>`
+}
+```
+Note: The above would only ever yield the second view if a re-render was triggered from the outside (by the parent component re-rendering).
+
+In order to re-render based on observables changing (setting state), you can use the withObservable helper. It will immediatly yield the view passed as first argument and resume rendering whenever the passed observable is changed. 
+
+[run on stackblitz](https://stackblitz.com/edit/withobservable-example)
+```javascript
+const ObservableExample = createPreactComponent(function* (){
+  const observable = createObservable({askQuestion: false});
+  setTimeout(() => {
+    // yield the second view after 2 seconds:
+    observable.false = true;
+  },2000);
+  yield withObservable(html`<div>Hello world!</div>`, observable);
+  yield html`<div>How are you?</div>`  
+});
+```
+
+
+
 ### Creating integrations
 
 [createIntegration] is the main API method for adding generator based component factories on top of a given framework. Here's how you would arrive at [createPreactComponent] using it:
