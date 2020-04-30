@@ -1,3 +1,7 @@
-export * from "./create_integration.js";
-export * from "./create_p_react_integration.js";
-export * from "./reactivity.js";
+export {
+  createIntegration,
+  withPromise,
+  withObservable,
+} from "./create_integration.js";
+export { createPReactIntegration } from "./create_p_react_integration.js";
+export { createObservable } from "./reactivity.js";
