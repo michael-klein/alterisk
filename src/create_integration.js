@@ -1,8 +1,6 @@
-const generators = new WeakMap();
-
 const WITH_MORE = Symbol("m");
 
-export function createYieldable(cb) {
+function createYieldable(cb) {
   return (view, arg) => {
     return [WITH_MORE, view, arg, cb];
   };
@@ -19,17 +17,33 @@ export const withObservable = createYieldable((observable, render) => {
   });
 });
 
+function instanceOf(a, b) {
+  return a instanceof b;
+}
+
+function isPromise(obj) {
+  return instanceOf(obj, Promise);
+}
+
+function isArray(obj) {
+  return instanceOf(obj, Array);
+}
+
+const RE_RENDER = 0;
+const CURRENT_VIEW = 1;
+const STATE_CHANGED = 2;
+const RENDER_PROMISE = 3;
+const RENDER_QUEUED = 4;
+const PARAMS = 5;
+const CURRENT_ARG = 6;
+const ID = 7;
 export function createIntegration(integrate) {
-  const contextMap = new Map();
+  const contextMap = {};
+  const generators = {};
+
   let setupContext;
-  function checkContext(name) {
-    if (!setupContext) {
-      throw new Error(`You can only call ${name} during render!`);
-    }
-  }
   const INIT = Symbol("init");
   function effect(name, cb, getDeps = () => void 0) {
-    checkContext(name);
     if (!setupContext[name]) {
       setupContext[name] = [];
     }
@@ -45,7 +59,7 @@ export function createIntegration(integrate) {
   const LAYOUT_EFFECT = "l";
 
   function runEffects(name, id, onlyCleanup = false) {
-    const context = contextMap.get(id);
+    const context = contextMap[id];
     if (context[name]) {
       context[name].forEach((effectData) => {
         const prevDeps = effectData.prevDeps;
@@ -76,46 +90,46 @@ export function createIntegration(integrate) {
     createComponent: (generatorComponent) => {
       function handleNext(context, next) {
         if (!next.done) {
-          if (next.value instanceof Array && next.value[0] === WITH_MORE) {
+          if (isArray(next.value) && next.value[0] === WITH_MORE) {
             let [, view, arg, cb] = next.value;
-            if (arg instanceof Promise) {
+            if (isPromise(arg)) {
               arg = arg.then((value) => {
                 setupContext = context;
                 return value;
               });
             }
-            context.currentArg = arg;
+            context[CURRENT_ARG] = arg;
             cb(arg, () => {
-              if (context.currentArg instanceof Promise) {
+              if (isPromise(context[CURRENT_ARG])) {
                 renderComponent(context);
               } else {
-                context.stateChanged = true;
-                context.reRender();
+                context[STATE_CHANGED] = true;
+                context[RE_RENDER]();
               }
             });
-            context.currentView = view;
+            context[CURRENT_VIEW] = view;
           } else {
-            context.currentView = next.value;
+            context[CURRENT_VIEW] = next.value;
           }
         }
       }
       function renderComponent(context) {
-        if (!context.renderPromise) {
-          const arg = context.currentArg;
-          context.currentArg = undefined;
+        if (!context[RENDER_PROMISE]) {
+          const arg = context[CURRENT_ARG];
+          context[CURRENT_ARG] = undefined;
           setupContext = context;
-          const next = generators.get(context).next(arg);
+          const next = generators[context[ID]].next(arg);
           setupContext = undefined;
-          if (next instanceof Promise) {
-            context.renderPromise = next.then((next) => {
+          if (isPromise(next)) {
+            context[RENDER_PROMISE] = next.then((next) => {
               setupContext = undefined;
-              context.renderPromise = null;
+              context[RENDER_PROMISE] = null;
               handleNext(context, next);
-              if (context.renderQeued) {
-                context.renderQeued = false;
-                context.stateChanged = true;
+              if (context[RENDER_QUEUED]) {
+                context[RENDER_QUEUED] = false;
+                context[STATE_CHANGED] = true;
               }
-              context.reRender(true);
+              context[RE_RENDER](true);
             });
           } else {
             handleNext(context, next);
@@ -139,63 +153,67 @@ export function createIntegration(integrate) {
         }
         return false;
       }
-      return integrate({
-        init: ({ reRender }, initialProps = {}, args = {}) => {
-          const context = {
-            reRender: (force = false) => {
-              if (!context.renderPromise || force) {
-                reRender();
-              } else {
-                context.renderQeued = true;
-              }
-            },
-            currentView: null,
-            stateChanged: true,
-            renderPromise: null,
-            renderQeued: false,
-            params: {
-              props: initialProps,
-              ...args,
-            },
+      return integrate([
+        // init
+        ({ reRender }, initialProps = {}, args = {}) => {
+          const context = [];
+          context[RE_RENDER] = (force = false) => {
+            if (!context[RENDER_PROMISE] || force) {
+              reRender();
+            } else {
+              context[RENDER_QUEUED] = true;
+            }
           };
-          const id = Symbol("id");
-          contextMap.set(id, context);
+          context[CURRENT_VIEW] = null;
+          context[STATE_CHANGED] = true;
+          context[RENDER_PROMISE] = null;
+          context[RENDER_QUEUED] = false;
+          context[PARAMS] = {
+            props: initialProps,
+            ...args,
+          };
+
+          context[ID] = Symbol("id");
+          contextMap[context[ID]] = context;
           setupContext = context;
-          generators.set(
-            context,
-            generatorComponent(() => context.params)
-          );
+          generators[context[ID]] = generatorComponent(() => context[PARAMS]);
           setupContext = undefined;
-          return id;
+          return context[ID];
         },
-        render: (id, props = {}, params = {}) => {
-          const context = contextMap.get(id);
+        // render
+        (id, props = {}, params = {}) => {
+          const context = contextMap[id];
           let propsChanged = false;
           if (props) {
-            propsChanged = arePropsDifferent(props, context.params.props);
-            context.params = { ...params };
-            context.params.props = props;
+            propsChanged = arePropsDifferent(props, context[PARAMS].props);
+            context[PARAMS] = { ...params };
+            context[PARAMS].props = props;
           } else {
-            context.params = { ...params };
+            context[PARAMS] = { ...params };
           }
-          if (context.stateChanged || propsChanged) {
-            context.stateChanged = false;
+          if (context[STATE_CHANGED] || propsChanged) {
+            context[STATE_CHANGED] = false;
             renderComponent(context);
           }
           runEffects(RENDER_EFFECT, id);
-          return context.currentView;
+          return context[CURRENT_VIEW];
         },
-        sideEffect: (id) => {
+        // sideEffect
+        (id) => {
           runEffects(SIDE_EFFECT, id);
         },
-        layoutEffect: (id) => {
+        // layoutEffect
+        (id) => {
           runEffects(LAYOUT_EFFECT, id);
         },
-        unmount: (id) => {
+        // unmount
+        (id) => {
           runEffects(SIDE_EFFECT, id, true);
           runEffects(LAYOUT_EFFECT, id, true);
+          delete generators[id];
+          delete contextMap[id];
         },
-      });
+      ]);
     },
     $sideEffect: (cb, getDeps) => effect(SIDE_EFFECT, cb, getDeps),
     $layoutEffect: (cb, getDeps) => effect(LAYOUT_EFFECT, cb, getDeps),

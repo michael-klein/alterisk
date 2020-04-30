@@ -2,8 +2,9 @@ const fs = require("fs");
 const { sync: globSync } = require("glob");
 const Terser = require("terser");
 const options = require("./terserrc.json");
-const path = require("path");
-
+if (!fs.existsSync("./dist")) {
+  fs.mkdirSync("./dist");
+}
 const files = globSync(`${"./src"}/*.js`);
 files.map((file) => {
   const terserResult = Terser.minify(fs.readFileSync(file, "utf8"), {

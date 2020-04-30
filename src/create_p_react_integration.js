@@ -2,10 +2,11 @@ import { createIntegration } from "./create_integration.js";
 
 export const createPReactIntegration = (framework) =>
   createIntegration((api) => {
+    const [init, render, sideEffect, layoutEffect, unmount] = api;
     return (props) => {
       const reRender = framework.useState(0)[1];
       const id = framework.useState(() => {
-        return api.init(
+        return init(
           {
             reRender: () => reRender((i) => i + 1),
           },
@@ -13,17 +14,17 @@ export const createPReactIntegration = (framework) =>
         );
       })[0];
       framework.useEffect(() => {
-        api.sideEffect(id);
+        sideEffect(id);
       });
       framework.useLayoutEffect(() => {
-        api.layoutEffect(id);
+        layoutEffect(id);
       });
       framework.useEffect(
         () => () => {
-          api.unmount(id);
+          unmount(id);
         },
         []
       );
-      return api.render(id, props);
+      return render(id, props);
     };
   });
