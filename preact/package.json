@@ -5,5 +5,17 @@
   "unpkg": "index.js",
   "scripts": {
     "build": "node build.js"
+  },
+  "snowpack": {
+    "webDependencies": [
+      "htm/preact/standalone.module.js"
+    ]
+  },
+  "devDependencies": {
+    "snowpack": "^1.7.1",
+    "terser": "^4.6.11"
+  },
+  "dependencies": {
+    "htm": "^3.0.4"
   }
 }

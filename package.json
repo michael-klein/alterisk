@@ -21,26 +21,18 @@
     "ui"
   ],
   "license": "MIT",
-  "dependencies": {
-    "htm": "^3.0.4"
-  },
   "devDependencies": {
     "es-dev-server": "^1.46.5",
-    "snowpack": "^1.7.1",
     "terser": "^4.6.11"
   },
   "files": [
     "dist",
     "src",
     "preact",
+    "enthjs",
     "terserrc.json",
     "jsconfig.json",
     "build.js",
     "web_modules"
-  ],
-  "snowpack": {
-    "webDependencies": [
-      "htm/preact/standalone.module.js"
-    ]
-  }
+  ]
 }

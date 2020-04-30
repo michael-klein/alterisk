@@ -3,3 +3,4 @@ package-lock.json
 dist
 test
 preact/index.js
+enthjs/index.js
