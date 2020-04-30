@@ -19,111 +19,157 @@ This project is mostly experimental at this stage and I'm publishing it early to
 
 Here's a simple, contrived example of an async generator component on top of preact+htm:
 
-[run on stackblitz](https://stackblitz.com/edit/js-8bjsqm)
+[run on stackblitz](https://stackblitz.com/edit/fake-signup-form)
 
 ```javascript
 import {
   createPreactComponent,
-  layoutEffect,
-  html,
   render,
-} from "https://cdn.jsdelivr.net/npm/alterisk@0.0.10/preact/index.js";
+  html,
+  h,
+  createObservable,
+  withObservable,
+  withPromise,
+  $layoutEffect
+} from "alterisk/preact";
+import { css } from "goober";
+import { Card, Center, Form } from "./misc";
 
-// our component is defined by a generator that yield views
-// state is a proxified object, any change to it's (deep) properties will trigger a re-render
-// state.props contains the current props
-const Test = createPreactComponent(async function* (state) {
-  // At this point, the setup phase begins
-  // "setup phase" = the code before the first yield/await
+// this is an example work flow using alter* with a fake signup form
+const Signup = createPreactComponent(async function*() {
+  // an observable is a proxified objects that emits change events when any of it's (deep) properties changes
+  // you could submit to these with formData.on(value => console.log(value))
+  const formData = createObservable({
+    email: "",
+    password: "",
+    avatar: false,
+    step: 0 // identifies what step in the signup process we are in
+    // step 0: enter email + password
+    // step 1: upload avatar
+    // step 3: we submit the form
+  });
 
-  // In the setup phase, you should call alter*'s equivalent to cutom hooks (implementation below):
-  setDocumentTitleTo(() => state.inputValue);
+  // this is similiar to (p)reacts useLayoutEffect hook
+  // it runs whenever the result of the second function returns a change in the dependency array
+  // you may also return a cleanup function from the effect, just like in useLayoutEffect
+  // careful: you only need to execture $layoutEffect once and not on every render, so don't put it inside the while loop below
+  $layoutEffect(() => {
+    document.title = `Step: ${formData.step}`
+  },() => [formData.step])
 
-  // we first show a loading spinner
-  // then wait for initialValue before we continue
-  // withPromise enables us to yield a view to render immediatly
-  // and a promise. alter* will await the promise and re-render on resolve
-  // yield returns the promise so we can await the result
-  const initialValue = await (yield withPromise(
-    html`<div>loading...</div>`,
-    fakeApiCall()
+  // while the user still needs to enter data, we remain in steps 0 and 1
+  while (formData.step < 2) {
+    switch (formData.step) {
+      case 0:
+        // withObservable renders the passed view and then waits for the passed observable to change to re-render
+        yield withObservable(renderStep1(), formData);
+        break;
+      case 1:
+        yield withObservable(renderStep2(), formData);
+        break;
+    }
+  }
+  // after step 1 is done, we break out of the loop and (fake) submit the form
+  // withPromise triggers a re-render when the passed promise resolves
+  // until then, we render a loading spinner
+  const success = await (yield withPromise(
+    renderLoadingSpinner(),
+    submitSignUpForm()
   ));
 
-  // the component enters the normal execution loop afer fetching
-  while (true) {
-    const inputValue =
-      state.inputValue !== undefined ? state.inputValue : initialValue;
+  // handle the response
+  if (success) {
+    // successfully signed up, render a success message!
     yield html`
-      <div>
-        <div>value:${inputValue}</div>
-        <div>
-          <input
-            value=${inputValue}
-            onInput=${(e) => (state.inputValue = e.target.value)}
-            type="text"
-          />
-        </div>
-      </div>
-    `;
+      <${Center}>
+        <${Card}>
+          (fake) sign-up successful!
+        </${Card}>
+      </${Center}>`;
+  } else {
+    // do something else (we're skipping this part)
+  }
+
+  function renderStep1() {
+    const canSubmit = formData.email.length > 3 && formData.password.length > 3;
+    return html`
+        <${Center}>
+          <${Card}>
+            <div class="instructions">Please sign up here via our (fake) form:</div>
+            <${Form} autocomplete="off">
+              <input 
+                type="text" 
+                placeholder="email" 
+                value=${formData.email} 
+                oninput=${e => (formData.email = e.target.value)} />
+              <input class="avatar" type="password" 
+                placeholder="password" 
+                value=${formData.password}   
+                oninput=${e => (formData.password = e.target.value)} />
+              <div class="submit">
+                <button 
+                  disabled=${!canSubmit} 
+                  onclick=${e => formData.step++}>next: select an avatar
+                </button>
+              </div>
+            </${Form}>
+          </${Card}>
+        </${Center}>`;
+  }
+
+  function renderStep2() {
+    const canSubmit = formData.avatar;
+    return html`
+        <${Center}>
+          <${Card}>
+            <div class="instructions">Please upload an avatar picture:
+              <div class=${css`
+                font-size: 10px;
+              `}>
+                (we're not acctually uploading anything)
+              </div>
+            </div>
+            <${Form} autocomplete="off">
+            <input type="file" 
+              name="avatar"
+              accept="image/png, image/jpeg" 
+              onchange=${e => (formData.avatar = true)}
+              />
+              <div class="submit">        
+                <button 
+                  class="previous"
+                  onclick=${e => formData.step--}>back
+                </button>
+                <button 
+                  disabled=${!canSubmit} 
+                  onclick=${e => formData.step++}>submit
+                </button>
+              </div>
+            </${Form}>
+          </${Card}>
+        </${Center}>`;
+  }
+
+  function renderLoadingSpinner() {
+    return html`
+        <${Center}>
+          <${Card}>
+            <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+          </${Card}>
+        </${Center}>`;
+  }
+
+  function submitSignUpForm() {
+    return new Promise(resolve => setTimeout(() => resolve(true), 2000))
   }
 });
 
-// this is basically the new version of custom hooks
-function setDocumentTitleTo(getValue) {
-  // let's set the title of the page to our input value using an effect
-  // just for fun!
-  // layoutEffect is similiar to useLayoutEffect in (p)react
-  // you can only declare effects during the "setup phase" of the generator component
-
-  layoutEffect(
-    () => {
-      if (getValue()) {
-        document.title = getValue();
-      }
-    },
-    () => [getValue()]
-  );
-}
-
-render(html` <${Test} /> `, document.body);
-
-function fakeApiCall() {
-  return new Promise((resolve) =>
-    setTimeout(() => resolve("hello world"), 2000)
-  );
-}
-```
-
-Here is another example with a simple non-async counter:
-
-[run on stackblitz](https://stackblitz.com/edit/js-9goh9e)
-
-```javascript
-// $counter is a "custom hook" that creates a counter state and increments it every second
-function $counter() {
-  const counter = createObservable({ count: 0 });
-  layoutEffect(
-    () => {
-      // set up the interval
-      const id = setInterval(() => counter.count++, 1000);
-      // clean it up on unmount
-      return () => clearInterval(id);
-    },
-    () => [] //run only once
-  );
-  return counter;
-}
-
-export const Counter = createPreactComponent(function* (state) {
-  // we initialize a counter and merge the counter state into state
-  // now, every time the interval ticks, it will trigger a re-render
-  state.merge($counter());
-
-  while (true) {
-    const { count } = state;
-    yield html` <div>current count: ${count}</div> `;
-  }
-});
+render(
+  html`
+    <${Signup} />
+  `,
+  document.body
+);
 ```
 
 ## Creating integrations
