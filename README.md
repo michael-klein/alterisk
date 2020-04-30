@@ -17,10 +17,9 @@ This project is mostly experimental at this stage and I'm publishing it early to
 
 ## Okay, but how does it look?
 
-Here's a simple, contrived example of an async generator component on top of preact+htm:
+The following is a simple, contrived example of an async generator component on top of preact+htm. As you can see, alter* lends itself for modelling multi step components that may even include async steps (no suspense needed):
 
 [run on stackblitz](https://stackblitz.com/edit/fake-signup-form)
-
 ```javascript
 import {
   createPreactComponent,
@@ -172,7 +171,41 @@ render(
 );
 ```
 
-## Creating integrations
+## API
+
+The API added on top of a framework by aster* is fairly simple. I will explain it using the provided preact integration.
+
+### Observables
+
+Observables are proxified objects. They include an ```on``` method for listening to changes. Any change on (deeply nested) properties of the object will fire the change event:
+
+[run on stackblitz](https://stackblitz.com/edit/observables-example1)
+```javascript
+import { createObservable } from "alterisk/preact";
+
+// create a new observable
+const observable = createObservable({
+  count: 0
+});
+// count observable up
+setInterval(() => {
+  observable.count++;
+}, 1000);
+
+// subscribe to the observable to update the DOM
+const counter = document.getElementById("counter");
+const off = observable.on(count => {
+  counter.innerHTML = `current count: ${observable.count}`;
+});
+
+// unsubscribe on clicking the stop button
+const stop = document.getElementById("stop");
+stop.addEventListener("click", () => {
+  off();
+});
+```
+
+### Creating integrations
 
 [createIntegration] is the main API method for adding generator based component factories on top of a given framework. Here's how you would arrive at [createPreactComponent] using it:
 
