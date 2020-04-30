@@ -174,8 +174,6 @@ render(
 
 ## Creating integrations
 
-alterisk can integrate with any framework (potentially). From the above example, [createPreactComponent] was created with the createPReactIntegration factory function which in turn is a thin wrapper around [createIntegration].
-
 [createIntegration] is the main API method for adding generator based component factories on top of a given framework. Here's how you would arrive at [createPreactComponent] using it:
 
 ```javascript
@@ -190,12 +188,13 @@ export const {
   // createIntegration expects you to return a valid component definition for the given framework
   // in this case, it's a function component
   // it might also be a class component
+  const [init, render, sideEffect, layoutEffect, unmount] = api;
   return (props) => {
     const reRender = useState(0)[1];
     const id = useState(() => {
       // api.init should be called during initialization of a new component instance
       // it will return an id, which is a Symbol meant to identify the new instance
-      return api.init(
+      return init(
         {
           // return a function that triggers a re-render for alterisk to use
           reRender: () => reRender((i) => i + 1),
@@ -206,21 +205,21 @@ export const {
 
     // api.sideEffect (asyncronous) and api.layoutEffect (syncronours) should be called after each render
     useEffect(() => {
-      api.sideEffect(id);
+      sideEffect(id);
     });
     useLayoutEffect(() => {
-      api.layoutEffect(id);
+      layoutEffect(id);
     });
 
     // call unmount on component unmount for cleanup purposes
     useEffect(
       () => () => {
-        api.unmount(id);
+        unmount(id);
       },
       []
     );
 
-    return api.render(id, props); // call this for every re-render and pass props
+    return render(id, props); // call this for every re-render and pass props
   };
 });
 ```
