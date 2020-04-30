@@ -205,6 +205,33 @@ stop.addEventListener("click", () => {
 });
 ```
 
+Additionally, all observables have a [merge] method with which you can merge one observable into another (so that the target has all properties of the the two observables and will fire onchange eventy when any of them change on either observable):
+
+[run on stackblitz](https://stackblitz.com/edit/observables-example2)
+```javascript
+const observable1 = createObservable({
+  count1: 0
+});
+const observable2 = createObservable({
+  count2: 0
+});
+const merged = createObservable({});
+
+merged.merge(observable1);
+merged.merge(observable2);
+
+setInterval(() => {
+  observable1.count1++;
+}, 1000);
+setInterval(() => {
+  observable2.count2+=10;
+}, 3000);
+const counter = document.getElementById("counter");
+merged.on(() => {
+  counter.innerHTML = `count1 + count2: ${merged.count1 + merged.count2}`;
+});
+```
+
 ### Rendering views and change detection
 
 alter* components are generator functions that yield views:
@@ -224,7 +251,7 @@ function* HelloWorld() {
 ```
 Note: The above would only ever yield the second view if a re-render was triggered from the outside (by the parent component re-rendering).
 
-In order to re-render based on observables changing (setting state), you can use the withObservable helper. It will immediatly yield the view passed as first argument and resume rendering whenever the passed observable is changed. 
+In order to re-render based on observables changing (setting state), you can use the [withObservable] helper. It will immediatly yield the view passed as first argument and resume rendering whenever the passed observable is changed. 
 
 [run on stackblitz](https://stackblitz.com/edit/withobservable-example)
 ```javascript
@@ -239,7 +266,43 @@ const ObservableExample = createPreactComponent(function* (){
 });
 ```
 
+### Async views
 
+alter* adds first class support for async components and workflows:
+
+[run on stackblitz](https://stackblitz.com/edit/async-component-example?file=index.js)
+```javascript
+const AsyncExample = createPreactComponent(async function* (){
+  await new Promise(resolve => setTimeout(resolve,2000));
+  yield html`<div>promise resolved</div>`  
+});
+```
+
+The above component will only render after the promise resolved.
+
+Obviously, you might want to show a loading indicator while a component is waiting. That's where the [withPromise] helper shines. Like [withObservable] it will immediatly render the passed view and return the promise so you can wait it!
+
+[run on stackblitz](https://stackblitz.com/edit/withpromise-example?file=index.js)
+```javascript
+const WithPromiseExample = createPreactComponent(async function*() {
+  function fetchCurrentDate() {
+    return new Promise(resolve =>
+      setTimeout(() => resolve(new Date().toDateString()), 2000)
+    );
+  }
+
+  const date = await (yield withPromise(
+    html`
+      <div>...loading current date</div>
+    `,
+    fetchCurrentDate()
+  ));
+  
+  yield html`
+    <div>current date: ${date}</div>
+  `;
+});
+```
 
 ### Creating integrations
 
