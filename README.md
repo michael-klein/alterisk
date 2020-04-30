@@ -304,6 +304,82 @@ const WithPromiseExample = createPreactComponent(async function*() {
 });
 ```
 
+### Hooks
+
+alter* provides a few lifecycle hooks which work similiar to (p)react hooks with the major difference that they do not need to be called on every render (they act more akin to lifecycle event subscriptions). 
+
+[$layoutEffect] and [$sideEffect] are very similiar to useLayoutEffect and useEffect:
+
+[run on stackblitz](https://stackblitz.com/edit/effect-example?file=index.js)
+```javascript
+const EffectsExample = createPreactComponent(function*() {
+  const observable = createObservable({ count: 0 });
+
+  // $layoutEffect works much like useLayoutEffect
+  // it runs synchronously after rendering
+  $layoutEffect(() => {
+    // this is the side effect, which creates an interval to count the observable up
+    const intervalId = setInterval(() => {
+      observable.count++;
+    }, 1000);
+    return () => {
+      // we return a cleanup function to clear the interval when the component dismounts
+      clearInterval(intervalId);
+    };
+    // the second argument is a function that should return a dependency array
+    // only when a dependency changes will $layoutEffect trigger
+    // an empty array means: run once (and cleanup on dismount)
+  }, () => []); 
+
+  // Also update the document title when count changes
+  // side effects run asynchronously to renders
+  $sideEffect(() => {
+    document.title = observable.count;
+  }, () => [observable.count]);
+
+  while (true) {
+    yield withObservable(
+      html`
+        <div>count: ${observable.count}</div>
+      `,
+      observable
+    );
+  }
+});
+```
+
+Additionally, the [$onRender] hooks is guaranteed to run on every render (of the underlying framework). So if you want to use (p)react custom hooks in your alter* component, this is where to put them:
+
+[run on stackblitz](https://stackblitz.com/edit/onrender-example?file=index.js)
+```javascript
+const OnRenderExample = createPreactComponent(function*() {
+  const observable = createObservable({ count: 0 });
+
+  $layoutEffect(() => { const intervalId = setInterval(() => {
+      observable.count++;
+    }, 1000);
+    return () => {    clearInterval(intervalId);
+    };
+  }, () => []); 
+
+  $onRender(() => {
+    // you may use any (p)react hook here!
+    useEffect(() => {
+      document.title = observable.count;
+    },observable.count)
+  });
+
+  while (true) {
+    yield withObservable(
+      html`
+        <div>count: ${observable.count}</div>
+      `,
+      observable
+    );
+  }
+});
+```
+
 ### Creating integrations
 
 [createIntegration] is the main API method for adding generator based component factories on top of a given framework. Here's how you would arrive at [createPreactComponent] using it:
