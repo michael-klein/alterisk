@@ -1,12 +1,15 @@
 import { createComponent, html, $layoutEffect } from "../enthjs/enth.js";
 import { createObservable, withObservable } from "../src/index.js";
 
-createComponent("test-component", function* () {
-  const state = createObservable({ count: 0 });
+createComponent("test-component", function* (params) {
+  const { attributes } = params();
+
   $layoutEffect(
     () => {
       const id = setInterval(() => {
-        state.count++;
+        let count = Number(attributes.count ?? 0);
+        count++;
+        attributes.count = `${count}`;
       }, 1000);
       return () => clearInterval(id);
     },
@@ -14,6 +17,7 @@ createComponent("test-component", function* () {
   );
 
   while (true) {
-    yield withObservable(html`<div>count: ${state.count}</div>`, state);
+    const count = Number(attributes.count ?? 0);
+    yield html`<div>count: ${count}</div>`;
   }
 });

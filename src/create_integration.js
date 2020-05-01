@@ -182,11 +182,11 @@ export function createIntegration(integrate) {
           return context[ID];
         },
         // render
-        (id, props = {}, params = {}) => {
+        (id, props = {}, params = {}, propsChanged = false) => {
           const context = contextMap[id];
-          let propsChanged = false;
           if (props) {
-            propsChanged = arePropsDifferent(props, context[PARAMS].props);
+            propsChanged =
+              propsChanged || arePropsDifferent(props, context[PARAMS].props);
             context[PARAMS] = { ...params };
             context[PARAMS].props = props;
           } else {
