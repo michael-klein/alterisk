@@ -1,0 +1,23 @@
+{
+  "name": "alterisk_enthjs",
+  "module": "index.js",
+  "main": "index.js",
+  "unpkg": "index.js",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "snowpack": {
+    "webDependencies": [
+      "htm",
+      "incremental-dom"
+    ]
+  },
+  "devDependencies": {
+    "snowpack": "^1.7.1",
+    "terser": "^4.6.11"
+  },
+  "dependencies": {
+    "htm": "^3.0.3",
+    "incremental-dom": "^0.7.0"
+  }
+}

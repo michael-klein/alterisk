@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "htm": "./htm.js",
+    "incremental-dom": "./incremental-dom.js"
+  }
+}
