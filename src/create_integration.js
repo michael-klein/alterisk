@@ -87,7 +87,8 @@ export function createIntegration(integrate) {
   }
 
   return {
-    createComponent: (generatorComponent) => {
+    createComponent: (...args) => {
+      const generatorComponent = args.pop();
       function handleNext(context, next) {
         if (!next.done) {
           if (isArray(next.value) && next.value[0] === WITH_MORE) {
@@ -153,7 +154,7 @@ export function createIntegration(integrate) {
         }
         return false;
       }
-      return integrate([
+      return integrate(...args, [
         // init
         ({ reRender }, initialProps = {}, args = {}) => {
           const context = [];
