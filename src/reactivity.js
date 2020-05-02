@@ -19,17 +19,19 @@ export function proxify(obj, onChange, hooks = {}) {
       return obj[prop];
     },
     set: (obj, prop, value) => {
+      const shouldFireChanged = obj[prop] !== value || !initialized;
       if (hooks.set) {
         value = hooks.set(obj, prop, value);
       }
       if (typeof value === "object" && !isProxyMap.has(value)) {
         value = proxify(value, onChangeWrapped);
       }
-      if (obj[prop] !== value || !initialized) {
+      if (shouldFireChanged) {
         obj[prop] = value;
         onChangeWrapped();
+      } else {
+        obj[prop] = value;
       }
-      obj[prop] = value;
       return true;
     },
   });
@@ -38,7 +40,7 @@ export function proxify(obj, onChange, hooks = {}) {
   return proxy;
 }
 
-export const createObservable = (initialState) => {
+export const createObservable = (initialState, hooks = {}) => {
   let listeners = [];
   let canEmit = true;
   const proxy = proxify(
@@ -73,7 +75,25 @@ export const createObservable = (initialState) => {
       if (canEmit) {
         listeners.forEach((l) => l());
       }
-    }
+    },
+    hooks
   );
   return proxy;
 };
+const performMerge = (target, source) => {
+  Object.keys(source).forEach((key) => {
+    if (!["on", "merge"].includes(key)) {
+      target[key] = source[key];
+    }
+  });
+};
+export function mergeObservables(...observables) {
+  const mergedObservable = createObservable({});
+  observables.forEach((observable) => {
+    observable.on(() => {
+      performMerge(mergedObservable, observable);
+    });
+    performMerge(mergedObservable, observable);
+  });
+  return mergedObservable;
+}

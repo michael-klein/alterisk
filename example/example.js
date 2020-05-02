@@ -6,7 +6,7 @@ import {
   withPromise,
   createObservable,
   withObservable,
-} from "../preact/dist/preact_integration.js";
+} from "../preact/src/preact_integration.js";
 
 import { Counter } from "./counter.js";
 

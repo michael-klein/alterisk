@@ -1,5 +1,5 @@
 import { createIntegration } from "../../src/index.js";
-import { proxify } from "../../src/reactivity.js";
+import { createObservable } from "../../src/reactivity.js";
 import { render } from "./web_modules/lit-html.js";
 
 const observerMap = new WeakMap();
@@ -32,56 +32,61 @@ const stopObserving = (element) => {
   }
 };
 
-function createPropertyProxy(element, queueRender) {
+function createPropertyProxy(element) {
   const accessedProps = [];
-  const props = proxify({}, () => {}, {
-    set: (obj, prop, value) => {
-      if (obj[prop] !== value && accessedProps.includes(prop)) {
-        queueRender();
-      }
-      return value;
-    },
-    get: (obj, prop) => {
-      if (!obj[prop]) {
-        obj[prop] = element[prop] || undefined;
-      }
-      if (!accessedProps.includes(prop)) {
-        accessedProps.push(prop);
-        Object.defineProperty(element, prop, {
-          get: () => obj[prop],
-          set: (value) => {
-            if (obj[prop] !== value) {
-              obj[prop] = value;
-              queueRender();
-            }
-          },
-        });
-      }
-    },
-  });
+  const props = createObservable(
+    {},
+    {
+      set: (obj, prop, value) => {
+        if (obj[prop] !== value) {
+          element[prop] = value;
+        }
+        return value;
+      },
+      get: (obj, prop) => {
+        if (obj[prop] === undefined) {
+          obj[prop] = element[prop] || undefined;
+        }
+        if (!accessedProps.includes(prop)) {
+          accessedProps.push(prop);
+          Object.defineProperty(element, prop, {
+            get: () => obj[prop],
+            set: (value) => {
+              if (obj[prop] !== value) {
+                obj[prop] = value;
+              }
+            },
+          });
+        }
+        return obj[prop];
+      },
+    }
+  );
   return props;
 }
 
-function createAttributeProxy(element, queueRender) {
+function createAttributeProxy(element) {
   const accessedAttributes = [];
-  const attributes = proxify({}, () => {}, {
-    set: (obj, prop, value) => {
-      if (obj[prop] !== value) {
-        element.setAttribute(prop, value);
-        queueRender();
-      }
-      return value;
-    },
-    get: (obj, prop) => {
-      if (!obj[prop]) {
-        obj[prop] = element.getAttribute(prop) || undefined;
-      }
-      if (!accessedAttributes.includes(prop)) {
-        accessedAttributes.push(prop);
-      }
-      return obj[prop];
-    },
-  });
+  const attributes = createObservable(
+    {},
+    {
+      set: (obj, prop, value) => {
+        if (obj[prop] !== value) {
+          element.setAttribute(prop, value);
+        }
+        return value;
+      },
+      get: (obj, prop) => {
+        if (!obj[prop]) {
+          obj[prop] = element.getAttribute(prop) || undefined;
+        }
+        if (!accessedAttributes.includes(prop)) {
+          accessedAttributes.push(prop);
+        }
+        return obj[prop];
+      },
+    }
+  );
   addObserver(element, (name, value) => {
     if (accessedAttributes.includes(name)) {
       attributes[name] = value;

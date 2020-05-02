@@ -1,23 +1,52 @@
-import { createComponent, html, $layoutEffect } from "../enthjs/src/enth.js";
-import { createObservable, withObservable } from "../src/index.js";
+import {
+  createComponent,
+  html,
+  $layoutEffect,
+  $sideEffect,
+} from "../enthjs/src/enth.js";
+import {
+  createObservable,
+  withObservable,
+  mergeObservables,
+} from "../src/index.js";
 
 createComponent("test-component", function* (params) {
-  const { attributes } = params();
+  const { attributes, props } = params();
 
   $layoutEffect(
     () => {
+      const off1 = props.on(() => {
+        if (props.count !== parseInt(attributes.count)) {
+          attributes.count = `${props.count}`;
+        }
+      });
+      const off2 = attributes.on(() => {
+        if (props.count !== parseInt(attributes.count)) {
+          props.count = attributes.count;
+        }
+      });
+
       const id = setInterval(() => {
-        let count = Number(attributes.count ?? 0);
-        count++;
-        attributes.count = `${count}`;
+        if (props.count === undefined) {
+          props.count = 0;
+        } else {
+          props.count++;
+        }
       }, 1000);
-      return () => clearInterval(id);
+      return () => {
+        clearInterval(id);
+        off1();
+        off2();
+      };
     },
     () => []
   );
 
   while (true) {
-    const count = Number(attributes.count ?? 0);
-    yield html`<div>count: ${count}</div>`;
+    const count = props.count ?? 0;
+    yield withObservable(
+      html`<div>count: ${count}</div>`,
+      mergeObservables(attributes, props)
+    );
   }
 });
