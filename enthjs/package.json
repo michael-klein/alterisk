@@ -1,15 +1,18 @@
 {
   "name": "alterisk_enthjs",
-  "module": "index.js",
-  "main": "index.js",
-  "unpkg": "index.js",
+  "module": "dist/enth.js",
+  "main": "dist/enth.js",
+  "unpkg": "dist/enth.js",
   "scripts": {
     "build": "node build.js"
   },
   "snowpack": {
     "webDependencies": [
       "htm",
-      "incremental-dom"
+      "lit-html"
+    ],
+    "dedupe": [
+      "lit-html"
     ]
   },
   "devDependencies": {

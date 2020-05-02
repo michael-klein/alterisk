@@ -1,6 +1,6 @@
-import { createIntegration } from "../src/index.js";
-import { render } from "./render.js";
-import { proxify } from "../src/reactivity.js";
+import { createIntegration } from "../../src/index.js";
+import { proxify } from "../../src/reactivity.js";
+import { render } from "./web_modules/lit-html.js";
 
 const observerMap = new WeakMap();
 

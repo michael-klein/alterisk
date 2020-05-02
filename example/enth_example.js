@@ -1,4 +1,4 @@
-import { createComponent, html, $layoutEffect } from "../enthjs/enth.js";
+import { createComponent, html, $layoutEffect } from "../enthjs/src/enth.js";
 import { createObservable, withObservable } from "../src/index.js";
 
 createComponent("test-component", function* (params) {

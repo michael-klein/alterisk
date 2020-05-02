@@ -1,8 +1,8 @@
 {
   "name": "alterisk_preact",
-  "module": "index.js",
-  "main": "index.js",
-  "unpkg": "index.js",
+  "module": "dist/preact_integration.js",
+  "main": "dist/preact_integration.js",
+  "unpkg": "dist/preact_integration.js",
   "scripts": {
     "build": "node build.js"
   },

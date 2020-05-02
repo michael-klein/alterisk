@@ -8,7 +8,7 @@
   "source": "src/index.js",
   "scripts": {
     "prepublish": "npm run build",
-    "build": "node build.js && cd ./preact && node build.js",
+    "build": "node build.js && cd ./preact && node build.js && cd ../enthjs && node build.js",
     "start": "es-dev-server --app-index . --node-resolve --watch --open"
   },
   "author": "Michael Klein",
