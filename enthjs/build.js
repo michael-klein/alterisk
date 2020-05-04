@@ -14,7 +14,7 @@ files.map((file) => {
   } else {
     writeFileSyncRecursive(
       file.replace("src", "dist"),
-      terserResult.code,
+      terserResult.code.replace(/\.\/src/g, "./dist"),
       "utf8"
     );
   }

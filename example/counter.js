@@ -4,7 +4,7 @@ import {
   html,
   withObservables,
   createObservable,
-} from "../preact/src/preact_integration.js";
+} from "../preact/dist/preact_integration.js";
 
 // $counter is a "custom hook" that creates a counter state and increments it every second
 function $counter(params) {
