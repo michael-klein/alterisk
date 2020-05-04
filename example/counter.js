@@ -2,9 +2,9 @@ import {
   createPreactComponent,
   $layoutEffect,
   html,
-  withObservable,
+  withObservables,
   createObservable,
-} from "../preact/dist/preact_integration.js";
+} from "../preact/src/preact_integration.js";
 
 // $counter is a "custom hook" that creates a counter state and increments it every second
 function $counter(params) {
@@ -38,6 +38,6 @@ export const Counter = createPreactComponent(function* (params) {
 
   while (true) {
     const { count } = counter;
-    yield withObservable(html`<div>current count: ${count}</div>`, counter);
+    yield withObservables(html`<div>current count: ${count}</div>`, counter);
   }
 });

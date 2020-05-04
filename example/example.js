@@ -5,7 +5,7 @@ import {
   render,
   withPromise,
   createObservable,
-  withObservable,
+  withObservables,
 } from "../preact/src/preact_integration.js";
 
 import { Counter } from "./counter.js";
@@ -31,16 +31,16 @@ function setDocumentTitleTo(getValue) {
   );
 }
 
-const Test = createPreactComponent(async function* () {
+const Test = createPreactComponent(function* () {
   // we first show a loading spinner
   // then wait for initialValue before we continue
   // withPromise enables us to yield a view to render immediatly
   // and a promise. alter* will await the promise and re-render on resolve
   // yield returns the promise so we can await the result
-  const initialValue = await (yield withPromise(
+  const initialValue = yield withPromise(
     html`<div>loading...</div>`,
     fakeApiCall()
-  ));
+  );
 
   let i = 0;
   // let's set the title of the page to our input value using an effect
@@ -50,7 +50,7 @@ const Test = createPreactComponent(async function* () {
   // here the component enters the normal loop afer fetching
   while (true) {
     const { inputValue, initialCount } = state;
-    yield withObservable(
+    yield withObservables(
       html`
         <div>
           <div>value:${inputValue}</div>

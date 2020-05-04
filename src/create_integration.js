@@ -1,21 +1,37 @@
 const WITH_MORE = Symbol("m");
 
-function createYieldable(cb) {
-  return (view, arg) => {
-    return [WITH_MORE, view, arg, cb];
+function createYieldable(handler) {
+  return (...args) => {
+    function runHandler(reRender) {
+      return handler(reRender, ...args);
+    }
+    runHandler[WITH_MORE] = true;
+    return runHandler;
   };
 }
 
-export const withPromise = createYieldable((_, render) => {
-  render();
+export const withPromise = createYieldable((reRender, view, promise) => {
+  promise.then((value) => {
+    reRender(value);
+  });
+  return view;
 });
 
-export const withObservable = createYieldable((observable, render) => {
-  const off = observable.on(() => {
-    off();
-    render();
-  });
-});
+export const withObservables = createYieldable(
+  (reRender, view, ...observables) => {
+    const offs = observables.map((observable, index) =>
+      observable.on(() => {
+        offs.forEach((off) => off());
+        if (observables.length > 0) {
+          reRender(index);
+        } else {
+          reRender();
+        }
+      })
+    );
+    return view;
+  }
+);
 
 function instanceOf(a, b) {
   return a instanceof b;
@@ -30,18 +46,72 @@ function isArray(obj) {
 }
 
 const RE_RENDER = 0;
-const CURRENT_VIEW = 1;
+const PROPS_CHANGED = 1;
 const STATE_CHANGED = 2;
-const RENDER_PROMISE = 3;
-const RENDER_QUEUED = 4;
-const PARAMS = 5;
-const CURRENT_ARG = 6;
-const ID = 7;
+const PARAMS = 3;
+const ID = 4;
+const CURRENT_ARG = 5;
+const RENDER_LOOP = 6;
+
 export function createIntegration(integrate) {
   const contextMap = {};
-  const generators = {};
 
   let setupContext;
+
+  function* createRenderLoop(context, viewGenerator, reRender) {
+    let currentView;
+    let isDone = false;
+    while (true) {
+      if (!isDone && (context[STATE_CHANGED] || context[PROPS_CHANGED])) {
+        context[STATE_CHANGED] = false;
+        context[PROPS_CHANGED] = false;
+        const arg = context[CURRENT_ARG];
+        context[CURRENT_ARG] = undefined;
+        setupContext = context;
+        let result = viewGenerator.next(arg);
+        setupContext = undefined;
+
+        if (isPromise(result)) {
+          let promiseReady = false;
+          while (!promiseReady) {
+            result.then(function handleResult(value) {
+              if (value instanceof Promise) {
+                value.then(handleResult);
+              } else {
+                result = value;
+                promiseReady = true;
+                reRender();
+              }
+            });
+            yield currentView;
+          }
+        }
+        const { value, done } = result;
+        if (value[WITH_MORE]) {
+          let yieldableReady = false;
+          let view;
+          while (!yieldableReady) {
+            if (!view) {
+              view = value((nextArg) => {
+                context[CURRENT_ARG] = nextArg;
+                yieldableReady = true;
+                reRender();
+              });
+            }
+            currentView = view;
+            yield currentView;
+          }
+          continue;
+        }
+        currentView = value;
+        if (done) {
+          isDone = true;
+        }
+      }
+      yield currentView;
+    }
+  }
+
   const INIT = Symbol("init");
   function effect(name, cb, getDeps = () => void 0) {
     if (!setupContext[name]) {
@@ -89,55 +159,7 @@ export function createIntegration(integrate) {
   return {
     createComponent: (...args) => {
       const generatorComponent = args.pop();
-      function handleNext(context, next) {
-        if (!next.done) {
-          if (isArray(next.value) && next.value[0] === WITH_MORE) {
-            let [, view, arg, cb] = next.value;
-            if (isPromise(arg)) {
-              arg = arg.then((value) => {
-                setupContext = context;
-                return value;
-              });
-            }
-            context[CURRENT_ARG] = arg;
-            cb(arg, () => {
-              if (isPromise(context[CURRENT_ARG])) {
-                renderComponent(context);
-              } else {
-                context[STATE_CHANGED] = true;
-                context[RE_RENDER]();
-              }
-            });
-            context[CURRENT_VIEW] = view;
-          } else {
-            context[CURRENT_VIEW] = next.value;
-          }
-        }
-      }
-      function renderComponent(context) {
-        if (!context[RENDER_PROMISE]) {
-          const arg = context[CURRENT_ARG];
-          context[CURRENT_ARG] = undefined;
-          setupContext = context;
-          const next = generators[context[ID]].next(arg);
-          setupContext = undefined;
-          if (isPromise(next)) {
-            context[RENDER_PROMISE] = next.then((next) => {
-              setupContext = undefined;
-              context[RENDER_PROMISE] = null;
-              handleNext(context, next);
-              if (context[RENDER_QUEUED]) {
-                context[RENDER_QUEUED] = false;
-                context[STATE_CHANGED] = true;
-              }
-              context[RE_RENDER](true);
-            });
-          } else {
-            handleNext(context, next);
-            setupContext = undefined;
-          }
-        }
-      }
+
       function arePropsDifferent(oldProps, newProps) {
         const oldKeys = Object.keys(oldProps);
         const newKeys = Object.keys(newProps);
@@ -154,21 +176,27 @@ export function createIntegration(integrate) {
         }
         return false;
       }
+
       return integrate(...args, [
         // init
         ({ reRender }, initialProps = {}, args = {}) => {
           const context = [];
+
+          context[RENDER_LOOP] = createRenderLoop(
+            context,
+            generatorComponent(() => context[PARAMS]),
+            () => context[RE_RENDER](true)
+          );
+
           context[RE_RENDER] = (force = false) => {
-            if (!context[RENDER_PROMISE] || force) {
-              reRender();
-            } else {
-              context[RENDER_QUEUED] = true;
+            if (force) {
+              context[STATE_CHANGED] = true;
             }
+            reRender();
           };
-          context[CURRENT_VIEW] = null;
+
           context[STATE_CHANGED] = true;
-          context[RENDER_PROMISE] = null;
-          context[RENDER_QUEUED] = false;
+          context[PROPS_CHANGED] = false;
           context[PARAMS] = {
             props: initialProps,
             ...args,
@@ -176,9 +204,6 @@ export function createIntegration(integrate) {
 
           context[ID] = Symbol("id");
           contextMap[context[ID]] = context;
-          setupContext = context;
-          generators[context[ID]] = generatorComponent(() => context[PARAMS]);
-          setupContext = undefined;
           return context[ID];
         },
         // render
@@ -192,12 +217,9 @@ export function createIntegration(integrate) {
           } else {
             context[PARAMS] = { ...params };
           }
-          if (context[STATE_CHANGED] || propsChanged) {
-            context[STATE_CHANGED] = false;
-            renderComponent(context);
-          }
+          context[PROPS_CHANGED] = propsChanged;
           runEffects(RENDER_EFFECT, id);
-          return context[CURRENT_VIEW];
+          return context[RENDER_LOOP].next().value;
         },
         // sideEffect
         (id) => {
@@ -211,7 +233,6 @@ export function createIntegration(integrate) {
         (id) => {
           runEffects(SIDE_EFFECT, id, true);
           runEffects(LAYOUT_EFFECT, id, true);
-          delete generators[id];
           delete contextMap[id];
         },
       ]);

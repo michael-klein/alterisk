@@ -6,7 +6,7 @@ import {
 } from "../enthjs/src/enth.js";
 import {
   createObservable,
-  withObservable,
+  withObservables,
   mergeObservables,
 } from "../src/index.js";
 
@@ -44,9 +44,6 @@ createComponent("test-component", function* (params) {
 
   while (true) {
     const count = props.count ?? 0;
-    yield withObservable(
-      html`<div>count: ${count}</div>`,
-      mergeObservables(attributes, props)
-    );
+    yield withObservables(html`<div>count: ${count}</div>`, attributes, props);
   }
 });
