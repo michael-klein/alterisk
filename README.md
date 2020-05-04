@@ -19,7 +19,7 @@ This project is mostly experimental at this stage and I'm publishing it early to
 
 The following is a simple, contrived example of an async generator component on top of preact+htm. As you can see, alter\* lends itself for modelling multi step components that may even include async steps (no suspense needed):
 
-[run on stackblitz](https://stackblitz.com/edit/fake-signup-form)
+[run on stackblitz](https://stackblitz.com/edit/fake-signup-form-2)
 
 ```javascript
 import {
@@ -178,7 +178,7 @@ Observables are proxified objects. They include an `on` method for listening to 
 [run on stackblitz](https://stackblitz.com/edit/observables-example1)
 
 ```javascript
-import { createObservable } from "alterisk/preact";
+import { createObservable } from "alterisk";
 
 // create a new observable
 const observable = createObservable({
@@ -202,27 +202,26 @@ stop.addEventListener("click", () => {
 });
 ```
 
-Additionally, all observables have a [merge] method with which you can merge one observable into another (so that the target has all properties of the the two observables and will fire onchange eventy when any of them change on either observable):
+Additionally, you can use the [mergeObservables] method with which you can merge one observable into another (so that the result has all properties of the the two observables and will fire onchange eventy when any of them change on either observable):
 
 [run on stackblitz](https://stackblitz.com/edit/observables-example2)
 
 ```javascript
+import { createObservable, mergeObservables } from "alterisk";
+
 const observable1 = createObservable({
-  count1: 0,
+  count1: 0
 });
 const observable2 = createObservable({
-  count2: 0,
+  count2: 0
 });
-const merged = createObservable({});
-
-merged.merge(observable1);
-merged.merge(observable2);
+const merged = mergeObservables(observable1, observable2);
 
 setInterval(() => {
   observable1.count1++;
 }, 1000);
 setInterval(() => {
-  observable2.count2 += 10;
+  observable2.count2+=10;
 }, 3000);
 const counter = document.getElementById("counter");
 merged.on(() => {
@@ -395,7 +394,7 @@ const OnRenderExample = createPreactComponent(function* () {
     // you may use any (p)react hook here!
     useEffect(() => {
       document.title = observable.count;
-    }, observable.count);
+    }, [observable.count]);
   });
 
   while (true) {
